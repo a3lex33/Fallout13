@@ -554,6 +554,38 @@
 /mob/living/carbon/human/proc/canUseHUD()
 	return !(src.stat || src.weakened || src.stunned || src.restrained())
 
+/mob/living/carbon/human/var/crawl_getup = 0
+/mob/living/carbon/human/verb/crawl()
+	set name = "Crawl"
+	set category = "IC"
+
+	if( stat || weakened || paralysis || resting || sleeping || (status_flags & FAKEDEATH) || buckled) return
+
+	if(crawl_getup)
+		return
+	var/T = get_turf(src)
+	if( (locate(/obj/structure/table) in T) || (locate(/obj/structure/stool/bed) in T) )
+		return
+	else
+		if(crawling)
+			crawl_getup = 1
+			sleep(10)
+			crawl_getup = 0
+			T = get_turf(src)
+			if( (locate(/obj/structure/table) in T) || (locate(/obj/structure/stool/bed) in T) )
+				playsound(loc, 'sound/items/trayhit2.ogg', 50, 1)
+				src << "\red \b Ouch!"
+				return
+			pass_flags += PASSCRAWL
+			layer = 4.0
+		else
+			pass_flags -= PASSCRAWL
+			//layer = 4.0
+		crawling = !crawling
+
+	update_canmove()
+	src << "\blue You are now [crawling ? "crawling" : "getting up"]"
+
 /mob/living/carbon/human/can_inject(mob/user, error_msg, target_zone, var/penetrate_thick = 0)
 	. = 1 // Default to returning true.
 	if(user && !target_zone)
@@ -760,20 +792,6 @@
 				w_uniform.add_fingerprint(M)
 
 			..()
-
-/*/mob/living/carbon/human/proc/handle_heart_beat()   //Someone pls. Make the shit work.
-
-	if(pulse == PULSE_NONE) return
-
-	if(pulse == PULSE_2FAST || shock_stage >= 10 || istype(get_turf(src), /turf/space))
-
-		var/temp = (5 - pulse)/2
-
-		if(heart_beat >= temp)
-			heart_beat = 0
-			src << sound('sound/effects/heartbeat.ogg',0,0,0,50)
-		else if(temp != 0)
-			heart_beat++   */
 
 /mob/living/carbon/human/proc/do_cpr(mob/living/carbon/C)
 	if(C.stat == DEAD)
